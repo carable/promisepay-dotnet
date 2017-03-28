@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
-    <PackageId>PromisePay.API.NET</PackageId>
+    <PackageId>Carable.Integrations.PromisePay.API.NET</PackageId>
     <Authors>Igor Sidorov, Carable developers</Authors>
     <Company>PromisePay</Company>
     <Product>PromisePayDotNet</Product>
@@ -13,9 +13,9 @@
     <VersionSufix>pre</VersionSufix>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Version>2.0.0</Version>
-    <PackageProjectUrl>https://github.com/PromisePay/promisepay-dotnet</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/carable/promisepay-dotnet</PackageProjectUrl>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <RepositoryUrl>https://github.com/PromisePay/promisepay-dotnet</RepositoryUrl>
+    <RepositoryUrl>https://github.com/carable/promisepay-dotnet</RepositoryUrl>
     <PackageReleaseNotes>.net Core version and .net 45 version of PromisePay client</PackageReleaseNotes>
 
   </PropertyGroup>
