@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 
 namespace PromisePayDotNet.Implementations
 {
@@ -21,14 +22,15 @@ namespace PromisePayDotNet.Implementations
 
         #region public methods
 
-        public IEnumerable<User> ListUsers(int limit = 10, int offset = 0)
+        public async Task<IEnumerable<User>> ListUsersAsync(int limit = 10, int offset = 0, string search = null)
         {
             AssertListParamsCorrect(limit, offset);
             var request = new RestRequest("/users", Method.GET);
             request.AddParameter("limit", limit);
             request.AddParameter("offset", offset);
+            request.AddParameter("search", search);
 
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             var dict = JsonConvert.DeserializeObject<IDictionary<string, object>>(response.Content);
             if (dict.ContainsKey("users"))
             {
@@ -38,16 +40,16 @@ namespace PromisePayDotNet.Implementations
             return new List<User>();
         }
 
-        public User GetUserById(string userId)
+        public async Task<User> GetUserByIdAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}", Method.GET);
             request.AddUrlSegment("id", userId);
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             return JsonConvert.DeserializeObject<IDictionary<string, User>>(response.Content).Values.First();
         }
 
-        public User CreateUser(User user)
+        public async Task<User> CreateUserAsync(User user)
         {
             ValidateUser(user);
             var request = new RestRequest("/users", Method.POST);
@@ -63,16 +65,16 @@ namespace PromisePayDotNet.Implementations
             request.AddParameter("zip", user.Zip);
             request.AddParameter("country", user.Country);
 
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             return JsonConvert.DeserializeObject<IDictionary<string,User>>(response.Content).Values.First();
         }
 
-        public bool DeleteUser(string userId)
+        public async Task<bool> DeleteUserAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}", Method.DELETE);
             request.AddUrlSegment("id", userId);
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return false;
@@ -80,12 +82,12 @@ namespace PromisePayDotNet.Implementations
             return true;
         }
 
-        public IEnumerable<Item> ListItemsForUser(string userId)
+        public async Task<IEnumerable<Item>> ListItemsForUserAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}/items", Method.GET);
             request.AddUrlSegment("id", userId);
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             var dict = JsonConvert.DeserializeObject<IDictionary<string, object>>(response.Content);
             if (dict.ContainsKey("items"))
             {
@@ -95,7 +97,7 @@ namespace PromisePayDotNet.Implementations
             return new List<Item>();
         }
 
-        public IEnumerable<PayPalAccount> ListPayPalAccountsForUser(string userId)
+        public async Task<IEnumerable<PayPalAccount>> ListPayPalAccountsForUserAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}/paypal_accounts", Method.GET);
@@ -103,7 +105,7 @@ namespace PromisePayDotNet.Implementations
             RestResponse response;
             try
             {
-                response = SendRequest(Client, request);
+                response = await SendRequestAsync(Client, request);
             }
             catch (ApiErrorsException e)
             {
@@ -117,12 +119,20 @@ namespace PromisePayDotNet.Implementations
             if (dict.ContainsKey("paypal_accounts"))
             {
                 var itemCollection = dict["paypal_accounts"];
-                return JsonConvert.DeserializeObject<List<PayPalAccount>>(JsonConvert.SerializeObject(itemCollection));
+                try
+                {
+                    return JsonConvert.DeserializeObject<List<PayPalAccount>>(JsonConvert.SerializeObject(itemCollection));
+                }
+                catch (JsonSerializationException)
+                {
+                    return new[] { JsonConvert.DeserializeObject<PayPalAccount>(JsonConvert.SerializeObject(itemCollection)) };
+                }
+                
             }
             return new List<PayPalAccount>();
         }
 
-        public IEnumerable<CardAccount> ListCardAccountsForUser(string userId)
+        public async Task<IEnumerable<CardAccount>> ListCardAccountsForUserAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}/card_accounts", Method.GET);
@@ -130,7 +140,7 @@ namespace PromisePayDotNet.Implementations
             RestResponse response;
             try
             {
-                response = SendRequest(Client, request);
+                response = await SendRequestAsync(Client, request);
             }
             catch (ApiErrorsException e)
             {
@@ -144,12 +154,20 @@ namespace PromisePayDotNet.Implementations
             if (dict.ContainsKey("card_accounts"))
             {
                 var itemCollection = dict["card_accounts"];
-                return JsonConvert.DeserializeObject<List<CardAccount>>(JsonConvert.SerializeObject(itemCollection));
+                try
+                {
+                    return JsonConvert.DeserializeObject<List<CardAccount>>(JsonConvert.SerializeObject(itemCollection));
+                }
+                catch (JsonSerializationException)
+                {
+                    return new[] { JsonConvert.DeserializeObject<CardAccount>(JsonConvert.SerializeObject(itemCollection)) };
+                }
+            
             }
             return new List<CardAccount>();
         }
 
-        public IEnumerable<BankAccount> ListBankAccountsForUser(string userId)
+        public async Task<IEnumerable<BankAccount>> ListBankAccountsForUserAsync(string userId)
         {
             AssertIdNotNull(userId);
             var request = new RestRequest("/users/{id}/bank_accounts", Method.GET);
@@ -157,7 +175,7 @@ namespace PromisePayDotNet.Implementations
             RestResponse response;
             try
             {
-                response = SendRequest(Client, request);
+                response = await SendRequestAsync(Client, request);
             }
             catch (ApiErrorsException e)
             {
@@ -171,13 +189,20 @@ namespace PromisePayDotNet.Implementations
             if (dict.ContainsKey("bank_accounts"))
             {
                 var itemCollection = dict["bank_accounts"];
-                return JsonConvert.DeserializeObject<List<BankAccount>>(JsonConvert.SerializeObject(itemCollection));
+                try
+                {
+                    return JsonConvert.DeserializeObject<List<BankAccount>>(JsonConvert.SerializeObject(itemCollection));
+                }
+                catch (JsonSerializationException)
+                {
+                    return new[] { JsonConvert.DeserializeObject<BankAccount>(JsonConvert.SerializeObject(itemCollection)) };
+                }
             }
             
             return new List<BankAccount>();
         }
 
-        public DisbursementAccount SetDisbursementAccount(string userId, string accountId)
+        public async Task<DisbursementAccount> SetDisbursementAccountAsync(string userId, string accountId)
         {
             AssertIdNotNull(userId);
 
@@ -187,7 +212,7 @@ namespace PromisePayDotNet.Implementations
             RestResponse response;
             try
             {
-                response = SendRequest(Client, request);
+                response = await SendRequestAsync(Client, request);
             }
             catch (ApiErrorsException)
             {
@@ -203,7 +228,7 @@ namespace PromisePayDotNet.Implementations
             return null;
         }
 
-        public User UpdateUser(User user)
+        public async Task<User> UpdateUserAsync(User user)
         {
             ValidateUser(user);
             var request = new RestRequest("/users/{id}", Method.PATCH);
@@ -220,7 +245,7 @@ namespace PromisePayDotNet.Implementations
             request.AddParameter("zip", user.Zip);
             request.AddParameter("country", user.Country);
 
-            var response = SendRequest(Client, request);
+            var response = await SendRequestAsync(Client, request);
             return JsonConvert.DeserializeObject<IDictionary<string, User>>(response.Content).Values.First();
         }
         #endregion
